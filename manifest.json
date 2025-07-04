@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "SmartPage",
+  "version": "1.0",
+  "description": "SmartPage uses ChatGPT to analyze and summarize web content based on your prompt.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
