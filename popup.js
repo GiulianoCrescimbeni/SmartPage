@@ -7,18 +7,54 @@ sendButton.addEventListener('click', async () => {
   if (!prompt) return;
 
   sendButton.disabled = true;
-  sendButton.textContent = 'Sending...';
   spinner.classList.remove('hidden');
 
   try {
-    // Ottieni il contenuto della pagina
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const pageContent = await chrome.scripting.executeScript({
+
+    const pageContentArr = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: () => document.body.innerText
+      func: () => {
+        const elements = document.querySelectorAll('h1, h2, h3, p, table, form');
+        let content = '';
+
+        elements.forEach(el => {
+          if (el.tagName === 'TABLE') {
+            content += el.outerHTML + '\n';
+          } else if (el.tagName === 'FORM') {
+            content += '<form>\n';
+            el.querySelectorAll('label, input, select, textarea, button').forEach(input => {
+              content += input.outerHTML + '\n';
+            });
+            content += '</form>\n';
+          } else {
+            content += `<${el.tagName.toLowerCase()}>${el.innerText}</${el.tagName.toLowerCase()}>\n`;
+          }
+        });
+
+        return content;
+      }
     });
 
-    const fullPrompt = `Web page content:\n${pageContent[0].result}\n\nUser prompt:\n${prompt}`;
+    const pageContent = pageContentArr[0]?.result || '';
+
+    const systemPrompt = `You are SmartPage, a Chrome extension that acts as an intelligent agent to either analyze or interact with web pages.
+
+    If the user's request is an analysis of the content (like summarizing, extracting data, etc.), respond with structured, clean HTML using semantic tags (like <h1>, <table>, <ul>, <p>, etc.). Avoid introductions or explanations.
+
+    If the user's request involves interacting with the page (e.g. filling a form, clicking a button), respond only with a JSON array of actions. Each must include:
+
+    - type: "fill_form" | "click" | "set_innerHTML"
+    - selector: a valid CSS selector (use IDs/classes actually present)
+    - value: for fill_form or set_innerHTML only
+
+    Example:
+    [
+      { "type": "fill_form", "selector": "#email", "value": "test@example.com" },
+      { "type": "click", "selector": "#submit" }
+    ]
+
+    Never guess selectors. Do not include code, comments or explanations. Never truncate the output.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -29,40 +65,42 @@ sendButton.addEventListener('click', async () => {
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
         messages: [
-          {
-            role: 'system',
-            content: 'You are SmartPage, a Chrome extension that acts as a user agent to analyze and interact with web pages. Given the full content of a web page and a user’s request, respond with clean and well-structured HTML code only. You must analyze the full content of the page in detail, but respond strictly and exclusively to what the user asks in the prompt that follows. Use proper semantic tags like <h1>, <p>, <ul>, <table>, <strong>, <em>, etc. Focus on extracting any relevant tabular data, numerical summaries, key figures, and structured content from the page. Do not include explanations, introductions, or comments. Do not use markdown. Return only raw HTML, ready to be inserted directly into a web page. The answer must be complete, detailed, and must not end with \'...\'. Ignore elements like Login, Register, Newsletter popups, etc. If useful data appears embedded in visual elements, try to extract the key numeric trends and restate them textually or in a table. Your response should be accurate, use words, use tables only if strictly necessary or requested by the user. Try to fulfill the user\'s request as precisely as possible'},
-          {
-            role: 'user',
-            content: fullPrompt
-          }
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Page content:\n${pageContent}\n\nUser request:\n${prompt}` }
         ]
       })
     });
 
     const data = await response.json();
+    const result = data?.choices?.[0]?.message?.content;
 
-    if (!response.ok || !data.choices || !data.choices[0]) {
-      throw new Error(data.error?.message || 'Invalid response from OpenAI');
+    if (!result) {
+      alert("⚠️ No response from model. Check prompt length or API key/quota.");
+      return;
     }
 
-    const reply = data.choices[0].message.content.trim();
+    const isJS = result.trim().startsWith('[') || result.includes('"type":') || result.includes('"selector":');
 
-    await chrome.storage.local.set({ smartpage_result: reply });
-
-    chrome.windows.create({
-      url: chrome.runtime.getURL("result.html"),
-      type: "popup",
-      width: 800,
-      height: 800
-    });
+    if (isJS) {
+      await chrome.storage.local.set({ smartpage_injected_code: result });
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['injected.js']
+      });
+    } else {
+      await chrome.storage.local.set({ smartpage_result: result });
+      chrome.windows.create({
+        url: chrome.runtime.getURL("result.html"),
+        type: "popup",
+        width: 800,
+        height: 800
+      });
+    }
 
   } catch (err) {
-    console.error('OpenAI request failed:', err);
-    alert(`⚠️ Error: ${err.message}`);
+    alert(`❌ Error: ${err.message}`);
   }
 
-  spinner.classList.add('hidden');
   sendButton.disabled = false;
-  sendButton.textContent = 'Send ✉️';
+  spinner.classList.add('hidden');
 });
