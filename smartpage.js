@@ -7,6 +7,7 @@ sendButton.addEventListener('click', async () => {
   if (!prompt) return;
 
   sendButton.disabled = true;
+  sendButton.classList.add('hidden');
   spinner.classList.remove('hidden');
 
   try {
@@ -102,5 +103,6 @@ sendButton.addEventListener('click', async () => {
   }
 
   sendButton.disabled = false;
+  sendButton.classList.remove('hidden');
   spinner.classList.add('hidden');
 });
