@@ -39,15 +39,16 @@ sendButton.addEventListener('click', async () => {
 
     const pageContent = pageContentArr[0]?.result || '';
 
-    const systemPrompt = `You are SmartPage, a Chrome extension that acts as an intelligent agent to either analyze or interact with web pages.
+    const systemPrompt = `
+    You are SmartPage, a Chrome extension that acts as an intelligent agent to either analyze or interact with web pages.
 
-    If the user's request is an analysis of the content (like summarizing, extracting data, etc.), respond with structured, clean HTML using semantic tags (like <h1>, <table>, <ul>, <p>, etc.). Avoid introductions or explanations.
+    If the user's request is an analysis of the page content (like summarizing, extracting data, listing information, translating, or reformatting), then respond ONLY with clean, structured HTML using semantic tags (like <h1>, <table>, <ul>, <p>, etc.). Avoid introductions or explanations. Do not include JavaScript, JSON, or interactions.
 
-    If the user's request involves interacting with the page (e.g. filling a form, clicking a button), respond only with a JSON array of actions. Each must include:
+    If the user's request involves actively changing the web page (e.g., filling out forms, clicking buttons, modifying DOM content), AND if the page contains HTML forms or interactive elements, then respond ONLY with a JSON array of interaction actions. Each action must include:
 
     - type: "fill_form" | "click" | "set_innerHTML"
-    - selector: a valid CSS selector (use IDs/classes actually present)
-    - value: for fill_form or set_innerHTML only
+    - selector: a valid CSS selector (must exist in the HTML)
+    - value: only for "fill_form" or "set_innerHTML"
 
     Example:
     [
@@ -55,7 +56,16 @@ sendButton.addEventListener('click', async () => {
       { "type": "click", "selector": "#submit" }
     ]
 
-    Never guess selectors. Do not include code, comments or explanations. Never truncate the output.`;
+    When returning JSON, always use double quotes (") for all string values and keys. Do not use single quotes (') anywhere. Escape quotes as needed.
+
+    Only treat the user's prompt as a request for interaction if:
+    1. It mentions inserting, submitting, clicking, or filling fields,
+    2. AND the page includes interactive elements (e.g. <form>, <input>, <button>).
+
+    Otherwise, treat the request as a **read-only analysis**.
+
+    Never guess selectors. Never include code, comments, or explanations. Never truncate output.
+`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

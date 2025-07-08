@@ -7,11 +7,6 @@ chrome.storage.local.get('smartpage_injected_code', (data) => {
       return;
     }
 
-    if (!raw.trim().startsWith('[')) {
-      console.warn('Response is not a JSON array:', raw);
-      return;
-    }
-
     let actions;
     try {
       actions = JSON.parse(raw);
@@ -21,8 +16,12 @@ chrome.storage.local.get('smartpage_injected_code', (data) => {
     }
 
     if (!Array.isArray(actions)) {
-      console.warn('Parsed data is not an array.');
-      return;
+      if (typeof actions === 'object' && actions !== null && actions.type && actions.selector) {
+        actions = [actions];
+      } else {
+        console.warn('Parsed data is not a valid action or array:', actions);
+        return;
+      }
     }
 
     actions.forEach((action) => {
