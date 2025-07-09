@@ -95,3 +95,14 @@ pre {
 .hidden {
   display: none;
 }
+
+.logo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: -10px;
+}
+
+.logo {
+  width: 128px;
+  height: auto;
+}
