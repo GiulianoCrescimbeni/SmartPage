@@ -17,5 +17,11 @@
     "32": "icons/icon.png",
     "48": "icons/icon.png",
     "128": "icons/icon.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["src/lib/html2pdf.bundle.min.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

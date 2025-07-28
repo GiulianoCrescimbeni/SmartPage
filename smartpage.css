@@ -38,24 +38,35 @@ textarea {
 }
 
 button {
-  padding: 10px 14px;
+  padding: 12px 16px;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(to right, #4a90e2, #00c6ff);
-  color: #fff;
+  background: linear-gradient(135deg, #1f76bb, #0e4a82);
+  color: #e0f6ff;
   cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s ease;
-  font-weight: bold;
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 10px rgba(0, 255, 255, 0.15);
+  transition: all 0.3s ease;
 }
 
 button:hover {
-  background: linear-gradient(to right, #357ab8, #009ed6);
+  background: linear-gradient(135deg, #298ddc, #116aa2);
+  box-shadow: 0 6px 14px rgba(0, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: scale(0.98);
 }
 
 button:disabled {
-  background: #444;
+  background: #333c4f;
+  color: #888;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .output {
